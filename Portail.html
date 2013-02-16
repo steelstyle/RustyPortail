@@ -129,6 +129,8 @@
 		shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
     }
 	
+	var neheTexture = Array();
+	
 	function handleLoadedTexture(texture) {
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -140,21 +142,33 @@
         gl.bindTexture(gl.TEXTURE_2D, null);
     }
 	
-	var neheTexture;
-
     function initTexture() {
-        neheTexture = gl.createTexture();
-        neheTexture.image = new Image();
-        neheTexture.image.onload = function () {
-            handleLoadedTexture(neheTexture)
-        }
+		var textures = [
+			"house.png"
+			, "portailTest.png"
+			, "portailTest.rusty.png"
+		]
+		
+		for (var i in textures) {
+			(function(n) {
+				var texture = gl.createTexture();
+				texture.image = new Image();
+				texture.image.onload = function () {
+					gl.activeTexture(gl.TEXTURE0 + i);
+					handleLoadedTexture(texture)
+				}
+				
+				neheTexture.push(texture);
 
-        neheTexture.image.src = "house.png";
+				texture.image.src = textures[n];
+			})(i);
+		}
 		// neheTexture.image.src = "bump.png";
     }
 
-
-    function initBuffers() {
+    function backGroundElement() {
+		this.textureIDX = 0;
+	
         this.vertexPosition = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPosition);
         var vertices = [
@@ -204,6 +218,58 @@
         this.textureCoords.numItems = 4;
     }
 
+    function portailElement() {
+		this.textureIDX = 1;
+	
+        this.vertexPosition = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPosition);
+        var vertices = [
+            // Front face
+			0.0, 0.0, 0.0
+            , 80.0, 0.0, 0.0
+            , 80.0, 80.0, 0.0
+            , 0.0, 80.0, 0.0
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        this.vertexPosition.itemSize = 3;
+        this.vertexPosition.numItems = 4;
+		
+        this.vertexIndex = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.vertexIndex);
+        var vertexIndices = [
+            0, 1, 2,      0, 2, 3   // Front face
+        ];
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(vertexIndices), gl.STATIC_DRAW);
+        this.vertexIndex.itemSize = 1;
+        this.vertexIndex.numItems = 6;
+		
+		this.vertexTranslation = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexTranslation);
+        var translations = [
+            // Front face
+            10.0, 10.0
+			, 10.0, 10.0
+			, 10.0, 10.0
+			, 10.0, 10.0
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(translations), gl.DYNAMIC_DRAW);
+        this.vertexTranslation.itemSize = 2;
+        this.vertexTranslation.numItems = 4;
+		
+		this.textureCoords = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoords);
+        var textureCoords = [
+            // Front face
+            0.0, 0.0
+            , 1.0, 0.0
+            , 1.0, 1.0
+            , 0.0, 1.0
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+        this.textureCoords.itemSize = 2;
+        this.textureCoords.numItems = 4;
+    }
+	
 
 	function prepareScene() {
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -217,9 +283,11 @@
 			, 0.0, 0.0, 1.0, 0.0
 			, 0.0, 0.0, 0.0, 1.0
 		]);
+		
+		gl.activeTexture(gl.TEXTURE0);
 	
-	    gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, neheTexture);
+	    gl.activeTexture(gl.TEXTURE0 + buffer.textureIDX);
+        gl.bindTexture(gl.TEXTURE_2D, neheTexture[0]);
         gl.uniform1i(shaderProgram.samplerUniform, 0);
 	
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertexPosition);
@@ -238,38 +306,30 @@
     var lastTime = new Date().getTime();
 	
 	var fps = 0;
-	var vSync = true;
+	
     function animate(buffer) {
-		fps++;
-	
-		vSync = false;
-	
-		prepareScene();
-	
 		//var t = 1.0 / 50.0;
 		var timeNow = new Date().getTime();
 		
-		gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertexTranslation);
-		var translations = [
-            // Front face
-            0.0, 0.0
-			, 0.0, 0.0
-			, 0.0, 0.0
-			, 0.0, 0.0
-        ];
-		gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(translations));		
-		
 		drawScene(buffer);
-		vSync = true;
 		
 		document.getElementById("fps").value = fps;
     }
 
-	buffer = null;
+	vSync = true;
+	buffers = Array();
     function tick() {
         requestAnimFrame(tick);
         if (vSync) {
-			animate(buffer);
+			vSync = false;
+			fps++;
+			
+			prepareScene();
+			for (var i in buffers) {
+				animate(buffers[i]);
+			}
+			
+			vSync = true;
 		}
     }
 
@@ -277,7 +337,8 @@
         var canvas = document.getElementById("portail-canvas");
         initGL(canvas);
         initShaders()
-        buffer = new initBuffers();
+        buffers.push(new backGroundElement());
+		buffers.push(new portailElement());
 		initTexture();
 
         gl.clearColor(0.5, 0.0, 0.0, 1.0);
