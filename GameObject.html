@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+<head>
+    <style type="text/css">
+    body{
+        background : #333;
+    }
+
+    canvas{
+        
+    }
+
+    #canvasContainer{
+        margin: auto;
+        width:  800px;
+        height: 400px;
+        background-color:  #000;
+        border : 3px solid #AAA;
+    }
+
+    h1 {
+        text-align: center;
+    }
+    </style>
+    <script>
+        k_PortalWidth = 80;
+        k_PortailHeight = 80;
+
+        function Bonus()
+        {
+        }
+
+        var directions = {{-1,-1},{-1,1},{1,1},{1,-1}};
+
+        function Epicenter(id,pos)
+        {
+            // Epicenter id
+            this.id = id;
+            // Life time
+            this.lifeTime = 0;
+            // Minimal life time
+            this.minLifeTime = 1000;
+
+            // Position
+            this.position = pos;
+
+            // Array of position representing rust candidate
+            this.rustCandidates = new Array();
+
+            // 
+            this.rustBonus = new Array();
+
+            // Number of new rust cell per millisecond
+            this.propagationSpeed = 10;
+
+            // Constructor---------------------------------------------------
+
+            this.update = function(portal,deltaTime)
+            {
+                this.lifeTime += this.deltaTime;
+                var candidateFound = false;
+
+                if (this.rustCandidates.length == 0)
+                {
+                    while (!candidateFound)
+                    {
+                        var dir = this.direction(random()*4);
+                        var cellX = position.x+dir[0];
+                        var cellY = position.y+dir[1]];
+                        if (portal.cells[cellX][cellY] == k_CellEmpty)
+                        {
+                            portal.cells[cellX][cellY] = this.id;
+                            this.rustCandidates.add(new Position(cellX,cellY));
+                        }
+                    }
+                }
+            }
+
+            this.isAlive = function ()
+            {
+                // No more rust candidate == no rust
+                return ((this.lifeTime < minLifeTime) || (rustCandidates.length == 0));
+            }
+
+
+            this.construct();
+        }
+
+
+        function Position(x, y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        k_CellInvisible = -2;
+        k_CellEmpty = -1;
+
+        function Portal()
+        {
+            this.cells = new Array();
+            this.epicentres = new Array();
+
+            this.construct = function();
+            {
+                for (var i=0; i < k_PortalWidth; i++)
+                {
+                    this.cells[i] = new Array();
+                    for (var j=0; j < k_PortalWidth; j++)
+                    {
+                        this.cells[i][j] = k_CellEmpty;
+                    }
+                }
+            }
+        }
+
+        function Game()
+        {
+            // Members---------------------------------------------------------
+            this.time = 0;
+            this.objectMode = 0;
+
+            MODE_OIL = 0;
+            MODE_DOG = 1;
+            
+
+            // Constructors----------------------------------------------------
+            this.construct = function() {
+            }
+
+            // render game
+            this.display = function() {
+                
+            }
+
+            // Put the game on pause
+            this.pause = function() {
+                alert("as");
+            }
+
+
+            this.reset = function() {
+                this.time = 0;
+                alert("reset");
+            }
+
+            // Call constructor
+            this.construct();
+        }
+
+        function init()
+        {
+            var g = new Game();
+        }
+
+    </script>
+</head>
+
+<body onload="init()">
+    <div id="canvasContainer">
+        <canvas width="800" height="400">
+        </canvas>
+        <h1>RusticPortail</h1>
+    </div>
+</body>
+</html>
