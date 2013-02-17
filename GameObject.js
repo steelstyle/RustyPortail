@@ -41,7 +41,8 @@ function Epicenter(id,pos)
 
 
     this.addRustCandidate = function(portal,cellX,cellY) {
-        if (portal.cells[cellX][cellY] == k_CellEmpty)
+        if ((cellX >= 0) && (cellX < k_PortalWidth) && (cellY >= 0) && (cellY < k_PortalWidth)
+            && (portal.cells[cellY][cellX] == k_CellEmpty))
         {
             this.rustCandidates.push(new Position(cellX,cellY));
             return true;
@@ -50,9 +51,10 @@ function Epicenter(id,pos)
     };
 
     this.makeRusty = function(portal, cellX, cellY) {
-        if (portal.cells[cellX][cellY] == k_CellEmpty)
+        if ( (cellX >= 0) && (cellX < k_PortalWidth) && (cellY >= 0) && (cellY < k_PortalWidth)
+            && (portal.cells[cellY][cellX] == k_CellEmpty))
         {
-            portal.cells[cellX][cellY] = this.id;
+            portal.cells[cellY][cellX] = this.id;
             //TODO : test this function
             //var elemIdx = this.rustCandidates.indexOf(new Position(cellX,cellY));
             //this.rustCandidates.splice(elemIdx,1);
@@ -86,10 +88,10 @@ function Epicenter(id,pos)
             var weigthedCandidates = new Array();
 
             // create a weigthed array for candidates
-            for (var c=0; c < rustCandidates.length; c++)
+            for (var c=0; c < this.rustCandidates.length; c++)
             {
                 weigthedCandidates.push(c);
-                var candidatePos = rustCandidates[c];
+                var candidatePos = this.rustCandidates[c];
                 for (var i=0; i < portal.bonus.length; i++)
                 {
                     var distance = portal.bonus.distance(candidatePos);
@@ -104,13 +106,12 @@ function Epicenter(id,pos)
             }
 
             var selectedCandidateId = weigthedCandidates[Math.floor(Math.random()*weigthedCandidates.length)];
-            var selectedCandidate = rustCandidates[selectedCandidateId];
+            var selectedCandidate = this.rustCandidates[selectedCandidateId];
             this.makeRusty(portal, selectedCandidate.x, selectedCandidate.y);
         }
         else
         {
-            var selectedCandidate = rustCandidates[Math.floor(Math.random()*rustCandidates.length)];
-            alert(selectedCandidate.x);
+            var selectedCandidate = this.rustCandidates[Math.floor(Math.random()*this.rustCandidates.length)];
             this.makeRusty(portal, selectedCandidate.x, selectedCandidate.y);
         }
     };
@@ -141,6 +142,7 @@ function Portal()
 {
     this.epicenters = new Array();
     this.cells = new Array();
+    this.bonus = new Array();
 
     this.construct = function() {
         for (var i=0; i < k_PortalWidth; i++)
@@ -164,13 +166,14 @@ function Portal()
 
         for (var i=0; i < this.epicenters.length; i++) {
             var ep = this.epicenters[i];
-            if ( ep.isAlive() ) {
+             ep.update(this,deltaTime);
+            /*if ( ep.isAlive() ) {
                 ep.update(this,deltaTime);
             }
             else {
                 var epicenterId = this.epicenters.indexOf(ep);
                 this.epicenters.splice(epicenterId,1);
-            }
+            }*/
         }
     };
 
