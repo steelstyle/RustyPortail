@@ -136,7 +136,7 @@ function Position(x, y)
 k_CellInvisible = -2;
 k_CellEmpty = -1;
 
-k_PortalWidth = 80;
+k_PortalWidth = 40;
 
 function Portal()
 {
@@ -156,7 +156,7 @@ function Portal()
 
         for (var i=0; i < 10; i++)
         {
-            var epicenterPos = new Position(Math.floor(Math.random()*80), Math.floor(Math.random()*80));
+            var epicenterPos = new Position(Math.floor(Math.random()*k_PortalWidth), Math.floor(Math.random()*k_PortalWidth));
             var ep = new Epicenter(i,epicenterPos);
             this.epicenters.push(ep);
         }
