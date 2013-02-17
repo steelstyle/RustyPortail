@@ -7,13 +7,13 @@ function getDirection(dir)
     dir = dir % 4;
 
     if (dir == 0)
-        return new Position(-1,-1);
+        return new Position(-1, 0);
     else if (dir == 1)
-        return new Position( 1,-1);
+        return new Position( 0,-1);
     else if (dir == 2)
-        return new Position( 1, 1);
+        return new Position( 1, 0);
     else if (dir == 3)
-        return new Position(-1, 1);
+        return new Position( 0, 1);
 }
 
 function Epicenter(id,pos)
