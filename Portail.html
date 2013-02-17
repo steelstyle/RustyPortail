@@ -9,17 +9,22 @@
 
 <script id="shader-fs" type="x-shader/x-fragment">
     precision mediump float;
-	
-	uniform sampler2D uSampler;
 
+	uniform sampler2D uSampler;
+	uniform sampler2D uTransparencySampler;
 
 	varying vec2 vTextureCoord;
 	
 	
     void main(void) {
-		float c = (vTextureCoord.x + vTextureCoord.y) / 2.0;
+		// float c = (vTextureCoord.x + vTextureCoord.y) / 2.0;
+		
+		
 	
-        gl_FragColor = vec4(texture2D(uSampler, vTextureCoord).xyz, 1.0);
+        gl_FragColor = texture2D(uSampler, vTextureCoord) * vec4(1, 1, 1, texture2D(uTransparencySampler, vTextureCoord).w);
+		
+		// gl_FragColor = texture2D(uTransparencySampler, vTextureCoord);
+		// gl_FragColor = texture2D(uTransparencySampler, vTextureCoord);
 		// gl_FragColor = vec4(vTextureCoord, 1.0, 1.0);
 		// gl_FragColor = vec4(1.0, 1.0, 0.0, 0.5);
     }
@@ -32,7 +37,6 @@
 
     uniform mat4 uPMatrix;
 	
-	varying vec4 vColor;
 	varying vec2 vTextureCoord;
 
     void main(void) {
@@ -127,6 +131,7 @@
 
         shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
 		shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+		shaderProgram.samplerTransparencyUniform = gl.getUniformLocation(shaderProgram, "uTransparencySampler");
     }
 	
 	var neheTexture = Array();
@@ -154,7 +159,6 @@
 				var texture = gl.createTexture();
 				texture.image = new Image();
 				texture.image.onload = function () {
-					gl.activeTexture(gl.TEXTURE0 + i);
 					handleLoadedTexture(texture)
 				}
 				
@@ -167,16 +171,23 @@
     }
 
     function backGroundElement() {
+		this.transparencyTexture = gl.createTexture();
+		var texture  = new Uint8Array([255]);
+		gl.bindTexture(gl.TEXTURE_2D, this.transparencyTexture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.ALPHA, 1, 1, 0, gl.ALPHA, gl.UNSIGNED_BYTE, texture);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.bindTexture(gl.TEXTURE_2D, null);
+	
 		this.textureIDX = 0;
 	
         this.vertexPosition = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPosition);
         var vertices = [
             // Front face
-			0.0, 0.0, 0.0
-            , 100.0, 0.0, 0.0
-            , 100.0, 100.0, 0.0
-            , 0.0, 100.0, 0.0
+			0.0, 0.0, 10.0
+            , 100.0, 0.0, 10.0
+            , 100.0, 100.0, 10.0
+            , 0.0, 100.0, 10.0
         ];
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
         this.vertexPosition.itemSize = 3;
@@ -219,16 +230,23 @@
     }
 
     function portailElement() {
+		this.transparencyTexture = gl.createTexture();
+		var texture  = new Uint8Array([ 255 ]);
+		gl.bindTexture(gl.TEXTURE_2D, this.transparencyTexture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.ALPHA, 1, 1, 0, gl.ALPHA, gl.UNSIGNED_BYTE, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.bindTexture(gl.TEXTURE_2D, null);
+		
 		this.textureIDX = 1;
 	
         this.vertexPosition = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPosition);
         var vertices = [
             // Front face
-			0.0, 0.0, 0.0
-            , 80.0, 0.0, 0.0
-            , 80.0, 80.0, 0.0
-            , 0.0, 80.0, 0.0
+			0.0, 0.0, 9.0
+            , 80.0, 0.0, 9.0
+            , 80.0, 80.0, 9.0
+            , 0.0, 80.0, 9.0
         ];
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
         this.vertexPosition.itemSize = 3;
@@ -269,26 +287,61 @@
         this.textureCoords.itemSize = 2;
         this.textureCoords.numItems = 4;
     }
-	
 
+    function rustyPortailElement() {
+		portailElement.apply(this);
+		
+		this.textureIDX = 2;
+		
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPosition);
+        var vertices = [
+            // Front face
+			0.0, 0.0, 8.0
+            , 80.0, 0.0, 8.0
+            , 80.0, 80.0, 8.0
+            , 0.0, 80.0, 8.0
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+		
+		return this;
+    }
+	
 	function prepareScene() {
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		
+		var ar = Array(80 * 80);
+		for(var i = 0; i < ar.length; i++) {
+			ar[i] = (Math.random() * 3.0) < 2.0 ? 255 : 0;
+			//ar[i] = 1 * 255;
+		}
+		var texture  = new Uint8Array(ar);
+		gl.bindTexture(gl.TEXTURE_2D, buffers[2].transparencyTexture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.ALPHA, 80, 80, 0, gl.ALPHA, gl.UNSIGNED_BYTE, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);			
+		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 	
     function drawScene(buffer) {
 		gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, [
 			2.0 / 100.0, 0.0, 0.0, -1.0
 			, 0.0, 2.0 / 100.0, 0.0, -1.0
-			, 0.0, 0.0, 1.0, 0.0
+			, 0.0, 0.0, 1.0 / 10.0, 0.0
 			, 0.0, 0.0, 0.0, 1.0
 		]);
 		
-		gl.activeTexture(gl.TEXTURE0);
+		//gl.activeTexture(gl.TEXTURE0);
 	
-	    gl.activeTexture(gl.TEXTURE0 + buffer.textureIDX);
-        gl.bindTexture(gl.TEXTURE_2D, neheTexture[0]);
+	    gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, neheTexture[buffer.textureIDX]);
         gl.uniform1i(shaderProgram.samplerUniform, 0);
+		
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, buffer.transparencyTexture);
+		gl.uniform1i(shaderProgram.samplerTransparencyUniform, 1);
 	
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer.vertexPosition);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, buffer.vertexPosition.itemSize, gl.FLOAT, false, 0, 0);
@@ -339,10 +392,14 @@
         initShaders()
         buffers.push(new backGroundElement());
 		buffers.push(new portailElement());
+		buffers.push(new rustyPortailElement());
 		initTexture();
 
-        gl.clearColor(0.5, 0.0, 0.0, 1.0);
-        //gl.enable(gl.DEPTH_TEST);
+        gl.clearColor(0.5, 0.0, 0.0, 0.0);
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+		gl.enable(gl.BLEND); 
+        gl.enable(gl.DEPTH_TEST);
+		gl.depthFunc(gl.LEQUAL);
 		//gl.enable(gl.CULL_FACE);
 
         tick();
@@ -355,7 +412,7 @@
 
 
 <body onload="webGLStart();" style="background-color: #988;">
-    <canvas id="portail-canvas" style="border: none;" width="500" height="500"></canvas>
+    <canvas id="portail-canvas" style="border: none;" width="800" height="800"></canvas>
 	
 	<br />
 	
