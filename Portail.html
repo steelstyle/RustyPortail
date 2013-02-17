@@ -6,6 +6,7 @@
 
 <script type="text/javascript" src="http://learningwebgl.com/lessons/lesson04/glMatrix-0.9.5.min.js"></script>
 <script type="text/javascript" src="http://learningwebgl.com/lessons/lesson04/webgl-utils.js"></script>
+<script type="text/javascript" src="GameObject.js"></script>
 
 <script id="shader-fs" type="x-shader/x-fragment">
     precision mediump float;
@@ -311,10 +312,9 @@
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		
 		if (fps % 10 == 0) {
-			var ar = Array(80 * 80);
-			for(var i = 0; i < ar.length; i++) {
-				ar[i] = (Math.random() * 4.0) < 3.0 ? 255 : 0;
-				//ar[i] = 1 * 255;
+            var ar = Array(80 * 80);
+			for(var i = 0; i < 80*80; i++) {
+				ar[i] = (game.portal.getCell1D(i) == k_CellEmpty) ?  0 : 255;
 			}
 			var texture  = new Uint8Array(ar);
 			gl.bindTexture(gl.TEXTURE_2D, buffers[2].transparencyTexture);
@@ -375,6 +375,7 @@
 	buffers = Array();
     function tick() {
         requestAnimFrame(tick);
+        game.update(1);
         if (vSync) {
 			vSync = false;
 			fps++;
@@ -387,6 +388,8 @@
 			vSync = true;
 		}
     }
+
+    var game = null;
 
     function webGLStart() {
         var canvas = document.getElementById("portail-canvas");
@@ -404,6 +407,8 @@
 		gl.depthFunc(gl.LEQUAL);
 		//gl.enable(gl.CULL_FACE);
 
+        game = new Game();
+
         tick();
     }
 
@@ -414,7 +419,7 @@
 
 
 <body onload="webGLStart();" style="background-color: #988;">
-    <canvas id="portail-canvas" style="border: none;" width="800" height="800"></canvas>
+    <canvas id="portail-canvas" style="border: none;" width="500" height="500"></canvas>
 	
 	<br />
 	
