@@ -1,3 +1,13 @@
+if (typeof(console) === "undefined" || typeof(console.log) !== "function") {
+	var console = { "log": function() {} };
+}
+
+console.log("started...");
+
+var k_CellInvisible = -2;
+var k_CellEmpty = -1;
+var k_PortalWidth = 40;
+
 function Bonus()
 {
 }
@@ -133,11 +143,6 @@ function Position(x, y)
     this.y = y;
 }
 
-k_CellInvisible = -2;
-k_CellEmpty = -1;
-
-k_PortalWidth = 40;
-
 function Portal()
 {
     this.epicenters = new Array();
@@ -145,6 +150,8 @@ function Portal()
     this.bonus = new Array();
 
     this.construct = function() {
+		console.log("k_PortalWidth:" + k_PortalWidth);
+	
         for (var i=0; i < k_PortalWidth; i++)
         {
             this.cells[i] = new Array();
@@ -183,6 +190,10 @@ function Portal()
 
         return this.cells[y][x];
     };
+	
+	this.getSize = function() {
+		return { "width" : this.cells[0].length, "height" : this.cells.length };
+	}
 
     this.construct();
 }
