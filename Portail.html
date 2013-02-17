@@ -150,8 +150,8 @@
     function initTexture() {
 		var textures = [
 			"house.png"
-			, "portailTest.png"
-			, "portailTest.rusty.png"
+			, "portail_A.png"
+			, "portail_A.rusty.png"
 		]
 		
 		for (var i in textures) {
@@ -306,23 +306,25 @@
 		return this;
     }
 	
-	function prepareScene() {
+	function prepareScene(fps) {
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		
-		var ar = Array(80 * 80);
-		for(var i = 0; i < ar.length; i++) {
-			ar[i] = (Math.random() * 3.0) < 2.0 ? 255 : 0;
-			//ar[i] = 1 * 255;
+		if (fps % 10 == 0) {
+			var ar = Array(80 * 80);
+			for(var i = 0; i < ar.length; i++) {
+				ar[i] = (Math.random() * 4.0) < 3.0 ? 255 : 0;
+				//ar[i] = 1 * 255;
+			}
+			var texture  = new Uint8Array(ar);
+			gl.bindTexture(gl.TEXTURE_2D, buffers[2].transparencyTexture);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.ALPHA, 80, 80, 0, gl.ALPHA, gl.UNSIGNED_BYTE, texture);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);			
+			gl.bindTexture(gl.TEXTURE_2D, null);
 		}
-		var texture  = new Uint8Array(ar);
-		gl.bindTexture(gl.TEXTURE_2D, buffers[2].transparencyTexture);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.ALPHA, 80, 80, 0, gl.ALPHA, gl.UNSIGNED_BYTE, texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);			
-		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 	
     function drawScene(buffer) {
@@ -377,7 +379,7 @@
 			vSync = false;
 			fps++;
 			
-			prepareScene();
+			prepareScene(fps);
 			for (var i in buffers) {
 				animate(buffers[i]);
 			}
