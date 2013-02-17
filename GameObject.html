@@ -55,6 +55,36 @@
 
             // Constructor---------------------------------------------------
 
+
+            this.addRustCandidate = function(portal,cellX,cellY)
+            {
+                if (portal.cells[cellX][cellY] == k_CellEmpty)
+                {
+                    this.rustCandidates.add(new Position(cellX,cellY));
+                    return true;
+                }
+                return false;
+            }
+
+            this.makeRusty = function(portal, cellX, cellY)
+            {
+                if (portal.cells[cellX][cellY] == k_CellEmpty)
+                {
+                    portal.cells[cellX][cellY] = this.id;
+                    //TODO : test this function
+                    int elemIdx = this.rustCandidates.indexOf(new Position(cellX,cellY));
+                    this.rustCandidates.splice(elemIdx,1);
+
+                    for (int i=0; i < 4; i++)
+                    {
+                        var dir = directions[i];
+                        this.addRustCandidate(cellX+dir[0],cellY+dir[1]);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
             this.update = function(portal,deltaTime)
             {
                 this.lifeTime += this.deltaTime;
@@ -64,14 +94,41 @@
                 {
                     while (!candidateFound)
                     {
-                        var dir = this.direction(random()*4);
+                        var dir = directions[random()*4];
                         var cellX = position.x+dir[0];
                         var cellY = position.y+dir[1]];
-                        if (portal.cells[cellX][cellY] == k_CellEmpty)
+                        candidateFound = this.makeRusty(portal,cellX,cellY);
+                    }
+                    else if (portal.bonus.length != 0)
+                    {
+                        var weigthedCandidates = new Array();
+
+                        // create a weigthed array for candidates
+                        for (int c=0; c < rustCandidates.length; c++)
                         {
-                            portal.cells[cellX][cellY] = this.id;
-                            this.rustCandidates.add(new Position(cellX,cellY));
+                            weigthedCandidates.push(c);
+                            var candidatePos = rustCandidates[c];
+                            for (int i=0; i < portal.bonus.length; i++)
+                            {
+                                var distance = portal.bonus.distance(candidatePos);
+                                if (distance < 11)
+                                {
+                                    for (var w=0; w < distance/2; w++)
+                                    {
+                                        weigthedCandidates.push(c);
+                                    }
+                                }
+                            }
                         }
+
+                        var selectedCandidateId = weigthedCandidates[random()*weigthedCandidates.length];
+                        var selectedCandidate = rustCandidates[selectedCandidateId];
+                        this.makeRusty(portal, selectedCandidate.x, selectedCandidate.y);
+                    }
+                    else
+                    {
+                        var selectedCandidate = rustCandidates[random()*rustCandidates.length];
+                        this.makeRusty(portal, selectedCandidate.x, selectedCandidate.y);
                     }
                 }
             }
@@ -135,7 +192,7 @@
 
             // Put the game on pause
             this.pause = function() {
-                alert("as");
+                alert("Pause");
             }
 
 
