@@ -7,6 +7,7 @@ console.log("started...");
 var k_CellInvisible = -2;
 var k_CellEmpty = -1;
 var k_PortalWidth = 40;
+k_loadedImages = new Object();
 
 function Bonus()
 {
@@ -26,6 +27,19 @@ function getDirection(dir)
         return new Position( 0, 1);
 }
 
+function index1D(column,line)
+{
+    return (line*k_PortalWidth) + column;
+}
+
+function index2D(index)
+{
+    var x = index % k_PortalWidth;
+    var y = (index - x) / k_PortalWidth;
+
+    return new Position(x,y);
+}
+
 function Epicenter(id,pos)
 {
     // Epicenter id
@@ -34,6 +48,8 @@ function Epicenter(id,pos)
     this.lifeTime = 0;
     // Minimal life time
     this.minLifeTime = 60000;
+    // Time since last rust cell
+    this.timeSinceLastRust = 0;
 
     // Position
     this.position = pos;
@@ -51,85 +67,99 @@ function Epicenter(id,pos)
 
 
     this.addRustCandidate = function(portal,cellX,cellY) {
+        var idx = index1D(cellX,cellY);
+
         if ((cellX >= 0) && (cellX < k_PortalWidth) && (cellY >= 0) && (cellY < k_PortalWidth)
-            && (portal.cells[cellY][cellX] == k_CellEmpty))
+            && (portal.cells[cellY][cellX] == k_CellEmpty)
+            && this.rustCandidates.indexOf(idx) == -1)
         {
-            this.rustCandidates.push(new Position(cellX,cellY));
+            this.rustCandidates.push(idx);
             return true;
         }
         return false;
     };
 
     this.makeRusty = function(portal, cellX, cellY) {
-        if ( (cellX >= 0) && (cellX < k_PortalWidth) && (cellY >= 0) && (cellY < k_PortalWidth)
-            && (portal.cells[cellY][cellX] == k_CellEmpty))
+        if ( (cellX >= 0) && (cellX < k_PortalWidth) && (cellY >= 0) && (cellY < k_PortalWidth))
         {
-            portal.cells[cellY][cellX] = this.id;
-            //TODO : test this function
-            //var elemIdx = this.rustCandidates.indexOf(new Position(cellX,cellY));
-            //this.rustCandidates.splice(elemIdx,1);
+            // Remove the element from rust candidate because it's not empty
+            // so not a proper candidate, otherwise it's will be filled
+            var elemIdx = this.rustCandidates.indexOf(index1D(cellX,cellY));
+            this.rustCandidates.splice(elemIdx,1);
 
-            for (var i=0; i < 4; i++)
+            if(portal.cells[cellY][cellX] == k_CellEmpty)
             {
-                var dir = getDirection(i);
-                this.addRustCandidate(portal,cellX+dir.x,cellY+dir.y);
+                portal.cells[cellY][cellX] = this.id;
+                
+                for (var i=0; i < 4; i++)
+                {
+                    var dir = getDirection(i);
+                    this.addRustCandidate(portal,cellX+dir.x,cellY+dir.y);
+                }
+                return true;
             }
-            return true;
         }
+            
         return false;
     };
 
     this.update = function(portal,deltaTime) {
-        this.lifeTime += this.deltaTime;
+        this.lifeTime += deltaTime;
+        this.timeSinceLastRust += deltaTime;
         var candidateFound = false;
 
-        if (this.rustCandidates.length == 0)
-        {
-            //while (!candidateFound)
-            {
-                var dir = getDirection(Math.floor(Math.random()*4));
-                var cellX = this.position.x + dir.x;
-                var cellY = this.position.y + dir.y;
-                candidateFound = this.makeRusty(portal,cellX,cellY);
-            }
-        }
-        else if (portal.bonus.length != 0)
-        {
-            var weigthedCandidates = new Array();
 
-            // create a weigthed array for candidates
-            for (var c=0; c < this.rustCandidates.length; c++)
+        if (this.timeSinceLastRust > this.propagationSpeed)
+        {
+            this.timeSinceLastRust -= this.propagationSpeed;
+            if (this.rustCandidates.length == 0)
             {
-                weigthedCandidates.push(c);
-                var candidatePos = this.rustCandidates[c];
-                for (var i=0; i < portal.bonus.length; i++)
+                //while (!candidateFound)
                 {
-                    var distance = portal.bonus.distance(candidatePos);
-                    if (distance < 11)
+                    var dir = getDirection(Math.floor(Math.random()*4));
+                    var cellX = this.position.x + dir.x;
+                    var cellY = this.position.y + dir.y;
+                    candidateFound = this.makeRusty(portal,cellX,cellY);
+                }
+            }
+            else if (portal.bonus.length != 0)
+            {
+                var weigthedCandidates = new Array();
+
+                // create a weigthed array for candidates
+                for (var c=0; c < this.rustCandidates.length; c++)
+                {
+                    weigthedCandidates.push(c);
+                    var candidatePos = index2D(this.rustCandidates[c]);
+                    for (var i=0; i < portal.bonus.length; i++)
                     {
-                        for (var w=0; w < distance/2; w++)
+                        var distance = portal.bonus.distance(candidatePos);
+                        if (distance < 11)
                         {
-                            weigthedCandidates.push(c);
+                            for (var w=0; w < distance/2; w++)
+                            {
+                                weigthedCandidates.push(c);
+                            }
                         }
                     }
                 }
-            }
 
-            var selectedCandidateId = weigthedCandidates[Math.floor(Math.random()*weigthedCandidates.length)];
-            var selectedCandidate = this.rustCandidates[selectedCandidateId];
-            this.makeRusty(portal, selectedCandidate.x, selectedCandidate.y);
-        }
-        else
-        {
-            var selectedCandidate = this.rustCandidates[Math.floor(Math.random()*this.rustCandidates.length)];
-            this.makeRusty(portal, selectedCandidate.x, selectedCandidate.y);
+                var selectedCandidateId = weigthedCandidates[Math.floor(Math.random()*weigthedCandidates.length)];
+                var selectedCandidate = index2D(this.rustCandidates[selectedCandidateId]);
+                this.makeRusty(portal, selectedCandidate.x, selectedCandidate.y);
+            }
+            else
+            {
+                var selectedCandidate = index2D(this.rustCandidates[Math.floor(Math.random()*this.rustCandidates.length)]);
+                this.makeRusty(portal, selectedCandidate.x, selectedCandidate.y);
+            }
         }
     };
 
     this.isAlive = function() {
         // No more rust candidate == no rust
         return ((this.lifeTime < this.minLifeTime) 
-            || (this.rustCandidates.length == 0));
+            || (this.rustCandidates.length != 0));
     };
 
 
@@ -143,13 +173,54 @@ function Position(x, y)
     this.y = y;
 }
 
-function Portal()
+
+function getImageArray(imageFilename)
+{
+    if(k_loadedImages[imageFilename] == undefined)
+    {
+        console.log("Loading.... (" + imageFilename + ")");
+        var img = new Image();
+        img.onload = extractLoadedImage;
+        img.src = imageFilename;
+        // wait
+    }
+    else
+    {
+        console.log("Return extracted Image");
+        //console.log(k_loadedImages[imageFilename]);
+    }
+
+
+    return k_loadedImages[imageFilename];
+}
+
+getImageArray("Portail_A.Map.png");
+
+function extractLoadedImage()
+{
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+
+    var imgWidth = this.width;
+    var imgHeight = this.height;
+
+    context.drawImage(this,0,0);
+    var imageData = context.getImageData(0,0,imgWidth,imgHeight);
+    var data = imageData.data;
+
+    var filename = this.src.substr(this.src.lastIndexOf("/")+1);
+    k_loadedImages[filename] = data;
+
+    console.log("Loaded image (" + filename + ")");
+}
+
+function Portal(bitmapFilename)
 {
     this.epicenters = new Array();
     this.cells = new Array();
     this.bonus = new Array();
 
-    this.construct = function() {
+    this.construct = function(imgFilename) {
 		console.log("k_PortalWidth:" + k_PortalWidth);
 	
         for (var i=0; i < k_PortalWidth; i++)
@@ -167,26 +238,40 @@ function Portal()
             var ep = new Epicenter(i,epicenterPos);
             this.epicenters.push(ep);
         }
+
+        var imgData = getImageArray("Portail_A.Map.png");
+
+        for (var i=0; i < imgData.length; i+=4)
+        {
+            var index = i/4;
+
+            var x = index % k_PortalWidth;
+            var y = (index - x) / k_PortalWidth;
+
+            if ( y == k_PortalWidth) break;
+
+            console.log(imgData[i]);
+            this.cells[y][x] = ( imgData[i] > 250 ) ? k_CellInvisible : k_CellEmpty ;
+        }
     };
 
     this.update = function(deltaTime) {
 
         for (var i=0; i < this.epicenters.length; i++) {
             var ep = this.epicenters[i];
-             ep.update(this,deltaTime);
-            /*if ( ep.isAlive() ) {
+            if ( ep.isAlive() ) {
                 ep.update(this,deltaTime);
             }
             else {
                 var epicenterId = this.epicenters.indexOf(ep);
                 this.epicenters.splice(epicenterId,1);
-            }*/
+            }
         }
     };
 
-    this.getCell1D = function(index1D) {
-        var x = index1D % k_PortalWidth;
-        var y = (index1D - x) / k_PortalWidth;
+    this.getCell1D = function(index) {
+        var x = index % k_PortalWidth;
+        var y = (index - x) / k_PortalWidth;
 
         return this.cells[y][x];
     };
@@ -195,7 +280,7 @@ function Portal()
 		return { "width" : this.cells[0].length, "height" : this.cells.length };
 	}
 
-    this.construct();
+    this.construct(bitmapFilename);
 }
 
 function Game()
@@ -212,7 +297,7 @@ function Game()
 
     // Constructors----------------------------------------------------
     this.construct = function() {
-        this.portal = new Portal();
+        this.portal = new Portal("Portail_A.Map.png");
     };
 
     // render game
@@ -227,13 +312,13 @@ function Game()
 
     // Put the game on pause
     this.pause = function() {
-        alert("Pause");
+        console.log("Pause");
     };
 
 
     this.reset = function() {
         this.time = 0;
-        alert("reset");
+        console.log("reset");
     };
 
     // Call constructor
